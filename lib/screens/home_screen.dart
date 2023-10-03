@@ -124,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(8.0),
               child: Tooltip(
                 message:
-                    'The button changes colors everyday. What color is the button on the eight day?',
+                    'The button changes colors everyday.\nWhat color is the button on the eight day?',
                 child: IconButton(
                   onPressed: () {
                     // print("steak: ${steak}");
@@ -138,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           Tooltip(
             message:
-                'The button has a dark mode and a light mode, yet it doesn\'t switch modes. The app has no mode, yet it switches modes.\nWhich mode is the true mode?',
+                'The button has a dark mode and a light mode,\nyet it doesn\'t switch modes.\nThe app has no mode, yet it switches modes.\nWhich mode is the true mode?',
             child: IconButton(
               icon: const Icon(
                 Icons.dark_mode,
