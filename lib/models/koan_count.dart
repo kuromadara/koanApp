@@ -18,6 +18,7 @@ class KoanCount {
                   : [Data.fromJson(json['data'])])
               .cast<Data>()
           : null,
+      // error needs to be done
       // errors: json['errors'] != null
       //     ? (json['errors'] is List
       //         ? (json['errors'] as List).map((i) => Errors.fromJson(i)).toList()
