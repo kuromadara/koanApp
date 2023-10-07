@@ -5,6 +5,8 @@ import 'package:koan/models/koan.dart';
 import 'package:koan/services/fetch_koan_count.dart';
 import 'package:koan/services/fetch_koan_service.dart';
 import 'package:koan/ui/loading_dialog.dart';
+import 'package:koan/ui/bottom_appbar.dart';
+import 'package:koan/screens/search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,6 +16,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0; // Initialize with the Home screen index
+
   bool isDataLoading = true;
   int? id;
   int? count;
@@ -100,7 +104,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refreshData() async {
-    // You can add any data fetching logic here that you want to run when refreshing.
     countKoan();
   }
 
@@ -194,9 +197,36 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _refreshData,
-        child: Icon(Icons.refresh),
+      floatingActionButton: Tooltip(
+        enableFeedback: steak! <= 7 ? true : false,
+        message: steak! <= 7
+            ? "You have a button to refresh the koan,\nBut you do not know when to press it.\nIs it better to press it often or seldom?\nWhat is the sound of no button pressed?"
+            : "",
+        child: FloatingActionButton(
+          onPressed: steak! >= 7 ? _refreshData : null,
+          child: const Icon(Icons.refresh),
+        ),
+      ),
+      floatingActionButtonLocation: steak! >= 7
+          ? FloatingActionButtonLocation.endContained
+          : FloatingActionButtonLocation.endFloat,
+      bottomNavigationBar: Visibility(
+        visible: steak! >= 7,
+        child: CustomBottomAppBar(
+          currentIndex: 0, // Set the current index for the Home screen
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+
+            // Handle navigation based on the selected index
+            if (index == 1) {
+              // Navigate to the SearchScreen when the "Search" item is tapped
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => SearchScreen()));
+            }
+          },
+        ),
       ),
     );
   }
