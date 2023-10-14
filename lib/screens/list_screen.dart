@@ -3,6 +3,7 @@ import 'package:koan/models/common/koan.dart';
 import 'package:koan/screens/home_screen.dart';
 import 'package:koan/services/database/database_service.dart';
 import 'package:koan/ui/bottom_appbar.dart';
+import 'package:koan/ui/loading_dialog.dart';
 
 class KoansScreen extends StatefulWidget {
   const KoansScreen({Key? key}) : super(key: key);
@@ -58,11 +59,15 @@ class _SearchScreenState extends State<KoansScreen> {
         future: _koans,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(
+              child: LoadingDialog(loadingText: "Loading..."),
+            );
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('No Koans available.'));
+            return const Center(
+              child: Text('No Koans available.'),
+            );
           } else {
             return ListView.builder(
               itemCount: snapshot.data!.length,

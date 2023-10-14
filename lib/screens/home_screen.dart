@@ -67,8 +67,10 @@ class _HomeScreenState extends State<HomeScreen> {
     localKoan = _getKoan();
     localKoan.then((koan) async {
       if (koan == null) {
+        print("no koan");
         countKoan();
       } else {
+        print("local koan");
         String currentDate =
             "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
         if (currentDate == koan.date) {
@@ -125,17 +127,18 @@ class _HomeScreenState extends State<HomeScreen> {
           String currentDate =
               "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
 
-          if (currentDate != data[0].date) {
-            Koan fetchedKoan = Koan(
-              serverId: data[0].id,
-              title: data[0].title,
-              koan: data[0].koan,
-              status: data[0].status,
-              date: data[0].date,
-            );
+          // need a logic here
+          // if (currentDate != data[0].date) {
+          Koan fetchedKoan = Koan(
+            serverId: data[0].id,
+            title: data[0].title,
+            koan: data[0].koan,
+            status: data[0].status,
+            date: data[0].date,
+          );
 
-            DatabaseService().insertKoan(fetchedKoan);
-          }
+          DatabaseService().insertKoan(fetchedKoan);
+          // }
         }
 
         setState(() {
@@ -175,6 +178,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
       String currentDate =
           "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
+      if (localDate.isEmpty) {
+        localDate = currentDate;
+        print("im working");
+      }
       final dateDifference = calculateDateDifference(currentDate, localDate);
       if (dateDifference == 1) {
         Streak updateStreak = Streak(
