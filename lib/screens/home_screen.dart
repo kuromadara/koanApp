@@ -137,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
             date: data[0].date,
           );
 
-          DatabaseService().insertKoan(fetchedKoan);
+          DatabaseService().insertKoanAndUpdate(fetchedKoan);
           // }
         }
 
