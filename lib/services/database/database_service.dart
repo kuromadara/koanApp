@@ -22,6 +22,7 @@ class DatabaseService {
 
     final path = join(databasepath, 'koan.db');
 
+    print("db path: $path");
     return await openDatabase(
       path,
       onCreate: _onCreate,
@@ -109,6 +110,7 @@ class DatabaseService {
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
 
+// this needs change
     batch.update(
       'koans',
       {'status': 0},

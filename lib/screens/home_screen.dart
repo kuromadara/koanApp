@@ -137,7 +137,12 @@ class _HomeScreenState extends State<HomeScreen> {
             date: data[0].date,
           );
 
-          DatabaseService().insertKoanAndUpdate(fetchedKoan);
+          try {
+            DatabaseService().insertKoanAndUpdate(fetchedKoan);
+          } catch (e) {
+            print("Error inserting data: $e");
+          }
+
           // }
         }
 
@@ -167,7 +172,12 @@ class _HomeScreenState extends State<HomeScreen> {
       Streak storeStreak = Streak(
         count: 1,
       );
-      DatabaseService().insertStreak(storeStreak);
+
+      try {
+        DatabaseService().insertStreak(storeStreak);
+      } catch (e) {
+        print("Error inserting data: $e");
+      }
 
       setState(() {
         currentStreak = 1;
