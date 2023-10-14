@@ -2,6 +2,8 @@ import 'package:koan/models/common/koan.dart';
 import 'package:koan/models/streak.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'dart:io';
 
 class DatabaseService {
   static final DatabaseService _databaseService = DatabaseService._internal();
@@ -18,6 +20,10 @@ class DatabaseService {
   }
 
   Future<Database> _initDatabase() async {
+    if (Platform.isWindows) {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    }
     final databasepath = await getDatabasesPath();
 
     final path = join(databasepath, 'koan.db');
@@ -100,25 +106,37 @@ class DatabaseService {
     return koans;
   }
 
+  Future<List<int>> getAllServerIds() async {
+    final db = await _databaseService.database;
+    List<Map<String, dynamic>> maps =
+        await db.query('koans', columns: ['server_id']);
+
+    // Extract the server_id values from the result maps
+    List<int> serverIds = maps.map((map) => map['server_id'] as int).toList();
+
+    return serverIds;
+  }
+
   Future<void> insertKoanAndUpdate(Koan koan) async {
     final db = await _databaseService.database;
     final batch = db.batch();
 
-    batch.insert(
-      'koans',
-      koan.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    // Insert the new Koan
+    await db.transaction((txn) async {
+      final insertedKoanId = await txn.insert(
+        'koans',
+        koan.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
 
-// this needs change
-    batch.update(
-      'koans',
-      {'status': 0},
-      where: 'id != ?',
-      whereArgs: [koan.id],
-    );
-
-    await batch.commit(noResult: true);
+      // Update the status of other records to 0 where id is not equal to the new Koan's ID
+      await txn.update(
+        'koans',
+        {'status': 0},
+        where: 'id != ?',
+        whereArgs: [insertedKoanId],
+      );
+    });
   }
 
   Future<void> insertStreak(Streak streak) async {

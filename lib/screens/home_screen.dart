@@ -35,6 +35,8 @@ class _HomeScreenState extends State<HomeScreen> {
   late DateTime now = DateTime.now();
   String localDate = "";
 
+  List<int> serverIds = [];
+
   final List<Color> colorRange = [
     Colors.grey[400]!,
     Colors.blueGrey[300]!,
@@ -90,6 +92,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> countKoan() async {
+    serverIds = await DatabaseService().getAllServerIds();
+    print("server ids: length: ${serverIds.length}");
     KoanCountService().fetchCount().then((response) {
       if (response.apiResponse.status == true) {
         var data = response.data;
@@ -97,7 +101,24 @@ class _HomeScreenState extends State<HomeScreen> {
           count = element.count;
         });
 
-        loadKoan(randomNumber(count!) - 1);
+        print("total ids length: $count");
+
+        if (serverIds.length == count) {
+          //TODO: load from local and unlock post koan
+        }
+
+        int randomIndex = -1;
+        bool isGenerated = false;
+
+        while (!isGenerated) {
+          randomIndex = randomNumber(count!) - 1;
+
+          if (!serverIds.contains(randomIndex)) {
+            isGenerated = true;
+          }
+        }
+
+        loadKoan(randomIndex);
 
         setState(() {
           isDataLoading = true;
@@ -142,7 +163,6 @@ class _HomeScreenState extends State<HomeScreen> {
           } catch (e) {
             print("Error inserting data: $e");
           }
-
           // }
         }
 
