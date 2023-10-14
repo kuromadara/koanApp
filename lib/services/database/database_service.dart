@@ -86,14 +86,13 @@ class DatabaseService {
     final db = await _databaseService.database;
     List<Map<String, dynamic>> maps = await db.query('koans');
 
-    // Convert the list of maps to a list of Koan objects
     List<Koan> koans = List.generate(maps.length, (i) {
       return Koan(
         id: maps[i]['id'],
         title: maps[i]['title'],
         koan: maps[i]['koan'],
-        status: maps[i]['status'], // Convert 1 to true
-        date: maps[i]['date'], // Assuming 'date' is a DateTime field
+        status: maps[i]['status'],
+        date: maps[i]['date'], //
       );
     });
 
@@ -104,14 +103,12 @@ class DatabaseService {
     final db = await _databaseService.database;
     final batch = db.batch();
 
-    // Insert the new Koan with status 1
     batch.insert(
       'koans',
       koan.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
 
-    // Update the status of all other Koans to 0
     batch.update(
       'koans',
       {'status': 0},
@@ -136,8 +133,7 @@ class DatabaseService {
 
     await db.update(
       'streaks',
-      streak
-          .toMap(), // Assuming that `toMap` in the Streak class returns a map with the updated count.
+      streak.toMap(),
       where: 'id = ?',
       whereArgs: [streak.id],
     );
