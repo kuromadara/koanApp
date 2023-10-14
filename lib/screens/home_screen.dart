@@ -149,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refreshData() async {
-    // this need work as you can see data is inserted in table.
+    // this need work as you can see data is inserted in table. or a different function to fetch from local
     countKoan();
   }
 
