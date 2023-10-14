@@ -82,6 +82,24 @@ class DatabaseService {
     );
   }
 
+  Future<List<Koan>> getAllKoans() async {
+    final db = await _databaseService.database;
+    List<Map<String, dynamic>> maps = await db.query('koans');
+
+    // Convert the list of maps to a list of Koan objects
+    List<Koan> koans = List.generate(maps.length, (i) {
+      return Koan(
+        id: maps[i]['id'],
+        title: maps[i]['title'],
+        koan: maps[i]['koan'],
+        status: maps[i]['status'], // Convert 1 to true
+        date: maps[i]['date'], // Assuming 'date' is a DateTime field
+      );
+    });
+
+    return koans;
+  }
+
   Future<void> insertKoanAndUpdate(Koan koan) async {
     final db = await _databaseService.database;
     final batch = db.batch();

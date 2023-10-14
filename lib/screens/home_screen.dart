@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:koan/models/common/koan.dart';
 import 'package:koan/models/koan_get.dart';
@@ -9,13 +8,13 @@ import 'package:koan/services/fetch_koan_count.dart';
 import 'package:koan/services/fetch_koan_service.dart';
 import 'package:koan/ui/loading_dialog.dart';
 import 'package:koan/ui/bottom_appbar.dart';
-import 'package:koan/screens/search_screen.dart';
+import 'package:koan/screens/list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({Key? key}) : super(key: key);
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -27,24 +26,23 @@ class _HomeScreenState extends State<HomeScreen> {
   int? count;
   String title = "";
   String koanDesc = "";
-  DateTime now = DateTime.now();
-  String localDate = "";
-
-  int? newId;
 
   int? currentStreak = 0;
 
-  late Future<Koan?> localKoan = _getKoan();
-  late Future<Streak?> localStreak = _getSteak();
+  late Future<Koan?> localKoan;
+  late Future<Streak?> localStreak;
 
-  List<Color> colorRange = [
-    Colors.grey[400]!, // Gray
+  late DateTime now = DateTime.now();
+  String localDate = "";
+
+  final List<Color> colorRange = [
+    Colors.grey[400]!,
     Colors.blueGrey[300]!,
     Colors.blueGrey[500]!,
     Colors.blueGrey[700]!,
     Colors.blue[900]!,
     Colors.red[700]!,
-    Colors.red[900]!, // Red
+    Colors.red[900]!,
   ];
 
   Color getColorFromNumber(int number) {
@@ -55,11 +53,41 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  int randomNumber(int total) {
-    return newId = Random().nextInt(total) + 1;
+  int randomNumber(int total) => Random().nextInt(total) + 1;
+
+  @override
+  void initState() {
+    super.initState();
+    localKoan = _getKoan();
+    localStreak = _getStreak();
+    getKoanFromLocal();
   }
 
-  void countKoan() async {
+  Future<void> getKoanFromLocal() async {
+    localKoan = _getKoan();
+    localKoan.then((koan) async {
+      if (koan == null) {
+        countKoan();
+      } else {
+        String currentDate =
+            "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+        if (currentDate == koan.date) {
+          id = koan.id!;
+          title = koan.title;
+          koanDesc = koan.koan;
+          localDate = koan.date!;
+          currentStreak = await fetchStreak();
+        } else {
+          countKoan();
+        }
+        setState(() {
+          isDataLoading = false;
+        });
+      }
+    });
+  }
+
+  Future<void> countKoan() async {
     KoanCountService().fetchCount().then((response) {
       if (response.apiResponse.status == true) {
         var data = response.data;
@@ -72,8 +100,6 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           isDataLoading = true;
         });
-      } else {
-        // setState(() {});
       }
     });
   }
@@ -84,7 +110,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     currentStreak = await fetchStreak();
 
-    print("current STreak load: $currentStreak");
     KoanService(koanPost: KoanPost(id: id.toString()))
         .fetchKoan()
         .then((response) {
@@ -97,27 +122,31 @@ class _HomeScreenState extends State<HomeScreen> {
         });
 
         if (data != null && data.isNotEmpty) {
-          Koan fetchedKoan = Koan(
-            serverId: data[0].id,
-            title: data[0].title,
-            koan: data[0].koan,
-            status: data[0].status,
-            date: data[0].date,
-          );
+          String currentDate =
+              "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
 
-          DatabaseService().insertKoan(fetchedKoan);
+          if (currentDate != data[0].date) {
+            Koan fetchedKoan = Koan(
+              serverId: data[0].id,
+              title: data[0].title,
+              koan: data[0].koan,
+              status: data[0].status,
+              date: data[0].date,
+            );
+
+            DatabaseService().insertKoan(fetchedKoan);
+          }
         }
 
         setState(() {
           isDataLoading = false;
         });
-      } else {
-        setState(() {});
       }
     });
   }
 
   Future<void> _refreshData() async {
+    // this need work as you can see data is inserted in table.
     countKoan();
   }
 
@@ -125,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return await _databaseService.getActiveKoan();
   }
 
-  Future<Streak?> _getSteak() async {
+  Future<Streak?> _getStreak() async {
     return await _databaseService.getStreak();
   }
 
@@ -144,22 +173,17 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       currentStreak = steak.count;
 
-      // update count in database if date is not same
       String currentDate =
           "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
       final dateDifference = calculateDateDifference(currentDate, localDate);
-      print("Date diff: $dateDifference");
       if (dateDifference == 1) {
-        print("local date working ");
         Streak updateStreak = Streak(
           id: 1,
           count: currentStreak! + 1,
         );
-
-        // Call the insertKoan method to store the fetched Koan
         DatabaseService().updateStreak(updateStreak);
       } else if (dateDifference > 1) {
-        final resetStreak = Streak(id: 1, count: 0);
+        final resetStreak = Streak(id: 1, count: 1);
         await DatabaseService().updateStreak(resetStreak);
       }
       return currentStreak!;
@@ -169,44 +193,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int calculateDateDifference(String date1, String date2) {
     final DateTime dateTime1 = DateTime.parse(date1);
     final DateTime dateTime2 = DateTime.parse(date2);
-
-    print("date 1: $date1");
-    print("date 2: $date2");
     final difference = dateTime1.difference(dateTime2);
     return difference.inDays;
-  }
-
-  Future<void> getKoanFromLocal() async {
-    localKoan = _getKoan();
-    localKoan.then((koan) async {
-      if (koan == null) {
-        countKoan();
-      } else {
-        String currentDate =
-            "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-        if (currentDate == koan.date) {
-          id = koan.id!;
-          title = koan.title;
-          koanDesc = koan.koan;
-          localDate = koan.date!;
-
-          currentStreak = await fetchStreak();
-          print("current STreak local: $currentStreak");
-        } else {
-          countKoan();
-        }
-        setState(() {
-          isDataLoading = false;
-        });
-      }
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    getKoanFromLocal();
-    // currentStreak = fetchStreak();
   }
 
   @override
@@ -215,17 +203,15 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Koan'),
         actions: <Widget>[
-          if (currentStreak! >= 8)
-            Container()
-          else
+          if (currentStreak! < 8)
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Tooltip(
                 message:
-                    'The button changes colors everyday.\nWhat color is the button on the eight day?',
+                    'The button changes colors everyday.\nWhat color is the button on the eighth day?',
                 child: IconButton(
                   onPressed: () {
-                    // print("steak: ${steak}");
+                    // Button logic here
                   },
                   icon: Icon(
                     Icons.whatshot,
@@ -241,7 +227,9 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(
                 Icons.dark_mode,
               ),
-              onPressed: () {},
+              onPressed: () {
+                // Button logic here
+              },
             ),
           ),
         ],
@@ -256,7 +244,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 isDataLoading
                     ? const LoadingDialog(loadingText: "Loading...")
                     : Card(
-                        // elevation: 5,
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
@@ -268,13 +255,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     title,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      // fontSize: 18.0,
                                     ),
                                   ),
                                 ),
                               ),
-
-                              // Content Section
                               Padding(
                                 padding: const EdgeInsets.all(16.0),
                                 child: Text(
@@ -286,7 +270,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                // Add any additional widgets here
               ],
             ),
           ),
@@ -308,19 +291,15 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: Visibility(
         visible: currentStreak! >= 7,
         child: CustomBottomAppBar(
-          currentIndex: 0, // Set the current index for the Home screen
+          currentIndex: 0,
           onTap: (index) {
             setState(() {
               _currentIndex = index;
             });
 
-            // Handle navigation based on the selected index
             if (index == 1) {
-              // Navigate to the SearchScreen when the "Search" item is tapped
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const SearchScreen()));
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const KoansScreen()));
             }
           },
         ),
