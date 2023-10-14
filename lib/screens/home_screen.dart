@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:koan/models/common/koan.dart';
 import 'package:koan/models/koan_get.dart';
+import 'package:koan/models/streak.dart';
 import 'package:koan/services/database/database_service.dart';
 import 'package:koan/services/fetch_koan_count.dart';
 import 'package:koan/services/fetch_koan_service.dart';
@@ -20,8 +21,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final DatabaseService _databaseService = DatabaseService();
 
-  int _currentIndex = 0; // Initialize with the Home screen index
-
+  int _currentIndex = 0;
   bool isDataLoading = true;
   int? id;
   int? count;
@@ -31,9 +31,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int? newId;
 
-  int? steak;
+  int? currentStreak = 0;
 
   late Future<Koan?> localKoan = _getKoan();
+  late Future<Streak?> localStreak = _getSteak();
 
   List<Color> colorRange = [
     Colors.grey[400]!, // Gray
@@ -57,11 +58,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return newId = Random().nextInt(total) + 1;
   }
 
-  int fetchSteak() {
-    // fetch steak from local db
-    return 5;
-  }
-
   void countKoan() async {
     KoanCountService().fetchCount().then((response) {
       if (response.apiResponse.status == true) {
@@ -69,8 +65,6 @@ class _HomeScreenState extends State<HomeScreen> {
         data?.forEach((element) {
           count = element.count;
         });
-
-        print(count);
 
         loadKoan(randomNumber(count!) - 1);
 
@@ -84,10 +78,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void loadKoan(int id) async {
-    print("id: ${id}");
     if (id == 0) {
       countKoan();
     }
+    currentStreak = await fetchStreak();
+
+    print("current STreak: $currentStreak");
     KoanService(koanPost: KoanPost(id: id.toString()))
         .fetchKoan()
         .then((response) {
@@ -113,8 +109,6 @@ class _HomeScreenState extends State<HomeScreen> {
           DatabaseService().insertKoan(fetchedKoan);
         }
 
-        print(title);
-
         setState(() {
           isDataLoading = false;
         });
@@ -132,13 +126,33 @@ class _HomeScreenState extends State<HomeScreen> {
     return await _databaseService.getActiveKoan();
   }
 
-  void getKoanFromLocal() {
-    print("here");
+  Future<Streak?> _getSteak() async {
+    return await _databaseService.getStreak();
+  }
 
-    print(localKoan);
+  Future<int> fetchStreak() async {
+    final steak = await localStreak;
+    if (steak == null) {
+      Streak storeStreak = Streak(
+        count: 1,
+      );
+      print("streak does not exist");
+      DatabaseService().insertStreak(storeStreak);
+
+      setState(() {
+        currentStreak = 1;
+      });
+      return 1;
+    } else {
+      print("streak exists");
+      currentStreak = steak.count + 1;
+      return currentStreak!;
+    }
+  }
+
+  void getKoanFromLocal() {
     localKoan = _getKoan();
     localKoan.then((koan) {
-      print("koanid: ${koan?.id}");
       if (koan == null) {
         countKoan();
       } else {
@@ -148,7 +162,6 @@ class _HomeScreenState extends State<HomeScreen> {
           id = koan.id!;
           title = koan.title;
           koanDesc = koan.koan;
-          print("date: ${koan.date}");
         } else {
           countKoan();
         }
@@ -163,17 +176,16 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     getKoanFromLocal();
-    // countKoan();
-    steak = fetchSteak();
+    // currentStreak = fetchStreak();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Koan'),
+        title: const Text('Koan'),
         actions: <Widget>[
-          if (steak! >= 8)
+          if (currentStreak! >= 8)
             Container()
           else
             Padding(
@@ -187,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                   icon: Icon(
                     Icons.whatshot,
-                    color: getColorFromNumber(steak!),
+                    color: getColorFromNumber(currentStreak!),
                   ),
                 ),
               ),
@@ -251,20 +263,20 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       floatingActionButton: Tooltip(
-        enableFeedback: steak! <= 7 ? true : false,
-        message: steak! <= 7
+        enableFeedback: currentStreak! <= 7 ? true : false,
+        message: currentStreak! <= 7
             ? "You have a button to refresh the koan,\nBut you do not know when to press it.\nIs it better to press it often or seldom?\nWhat is the sound of no button pressed?"
             : "",
         child: FloatingActionButton(
-          onPressed: steak! >= 7 ? _refreshData : null,
+          onPressed: currentStreak! >= 7 ? _refreshData : null,
           child: const Icon(Icons.refresh),
         ),
       ),
-      floatingActionButtonLocation: steak! >= 7
+      floatingActionButtonLocation: currentStreak! >= 7
           ? FloatingActionButtonLocation.endContained
           : FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: Visibility(
-        visible: steak! >= 7,
+        visible: currentStreak! >= 7,
         child: CustomBottomAppBar(
           currentIndex: 0, // Set the current index for the Home screen
           onTap: (index) {
@@ -275,8 +287,10 @@ class _HomeScreenState extends State<HomeScreen> {
             // Handle navigation based on the selected index
             if (index == 1) {
               // Navigate to the SearchScreen when the "Search" item is tapped
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => SearchScreen()));
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SearchScreen()));
             }
           },
         ),

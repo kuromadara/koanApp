@@ -1,4 +1,5 @@
 import 'package:koan/models/common/koan.dart';
+import 'package:koan/models/streak.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -39,6 +40,13 @@ class DatabaseService {
             status BOOLEAN DEFAULT 1,
             date DATE
         );
+      ''');
+
+    await db.execute('''
+            CREATE TABLE streaks(
+              id INTEGER PRIMARY KEY,
+              count INTEGER
+            );
       ''');
   }
 
@@ -94,5 +102,28 @@ class DatabaseService {
     );
 
     await batch.commit(noResult: true);
+  }
+
+  Future<void> insertStreak(Streak streak) async {
+    final db = await _databaseService.database;
+    await db.insert(
+      'streaks',
+      streak.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Streak?> getStreak() async {
+    final db = await _databaseService.database;
+    List<Map<String, dynamic>> maps = await db.query('streaks');
+
+    if (maps.isEmpty) {
+      return null;
+    }
+
+    return Streak(
+      id: maps[0]['id'],
+      count: maps[0]['count'],
+    );
   }
 }
