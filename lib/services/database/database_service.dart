@@ -113,6 +113,18 @@ class DatabaseService {
     );
   }
 
+  Future<void> updateStreak(Streak streak) async {
+    final db = await _databaseService.database;
+
+    await db.update(
+      'streaks',
+      streak
+          .toMap(), // Assuming that `toMap` in the Streak class returns a map with the updated count.
+      where: 'id = ?',
+      whereArgs: [streak.id],
+    );
+  }
+
   Future<Streak?> getStreak() async {
     final db = await _databaseService.database;
     List<Map<String, dynamic>> maps = await db.query('streaks');

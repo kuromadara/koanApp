@@ -28,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String title = "";
   String koanDesc = "";
   DateTime now = DateTime.now();
+  String localDate = "";
 
   int? newId;
 
@@ -77,13 +78,13 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void loadKoan(int id) async {
+  Future<void> loadKoan(int id) async {
     if (id == 0) {
       countKoan();
     }
     currentStreak = await fetchStreak();
 
-    print("current STreak: $currentStreak");
+    print("current STreak load: $currentStreak");
     KoanService(koanPost: KoanPost(id: id.toString()))
         .fetchKoan()
         .then((response) {
@@ -96,16 +97,14 @@ class _HomeScreenState extends State<HomeScreen> {
         });
 
         if (data != null && data.isNotEmpty) {
-          // Assuming Koan is the class for your Koan data
           Koan fetchedKoan = Koan(
             serverId: data[0].id,
             title: data[0].title,
             koan: data[0].koan,
-            status: data[0].status, // Set the status to true or false as needed
-            date: data[0].date, // Set the date as needed
+            status: data[0].status,
+            date: data[0].date,
           );
 
-          // Call the insertKoan method to store the fetched Koan
           DatabaseService().insertKoan(fetchedKoan);
         }
 
@@ -136,7 +135,6 @@ class _HomeScreenState extends State<HomeScreen> {
       Streak storeStreak = Streak(
         count: 1,
       );
-      print("streak does not exist");
       DatabaseService().insertStreak(storeStreak);
 
       setState(() {
@@ -144,15 +142,43 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       return 1;
     } else {
-      print("streak exists");
-      currentStreak = steak.count + 1;
+      currentStreak = steak.count;
+
+      // update count in database if date is not same
+      String currentDate =
+          "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+      final dateDifference = calculateDateDifference(currentDate, localDate);
+      print("Date diff: $dateDifference");
+      if (dateDifference == 1) {
+        print("local date working ");
+        Streak updateStreak = Streak(
+          id: 1,
+          count: currentStreak! + 1,
+        );
+
+        // Call the insertKoan method to store the fetched Koan
+        DatabaseService().updateStreak(updateStreak);
+      } else if (dateDifference > 1) {
+        final resetStreak = Streak(id: 1, count: 0);
+        await DatabaseService().updateStreak(resetStreak);
+      }
       return currentStreak!;
     }
   }
 
-  void getKoanFromLocal() {
+  int calculateDateDifference(String date1, String date2) {
+    final DateTime dateTime1 = DateTime.parse(date1);
+    final DateTime dateTime2 = DateTime.parse(date2);
+
+    print("date 1: $date1");
+    print("date 2: $date2");
+    final difference = dateTime1.difference(dateTime2);
+    return difference.inDays;
+  }
+
+  Future<void> getKoanFromLocal() async {
     localKoan = _getKoan();
-    localKoan.then((koan) {
+    localKoan.then((koan) async {
       if (koan == null) {
         countKoan();
       } else {
@@ -162,6 +188,10 @@ class _HomeScreenState extends State<HomeScreen> {
           id = koan.id!;
           title = koan.title;
           koanDesc = koan.koan;
+          localDate = koan.date!;
+
+          currentStreak = await fetchStreak();
+          print("current STreak local: $currentStreak");
         } else {
           countKoan();
         }
