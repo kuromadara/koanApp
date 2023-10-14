@@ -1,22 +1,23 @@
 import 'package:koan/models/common/api_response.dart';
+import 'package:koan/models/common/koan.dart';
 
-class Koan {
+class KoanGet {
   ApiResponse apiResponse;
-  List<Data>? data;
+  List<Koan>? data;
 
-  Koan({
+  KoanGet({
     required this.apiResponse,
     this.data,
   });
 
-  factory Koan.fromJson(Map<String, dynamic> json) {
-    return Koan(
+  factory KoanGet.fromJson(Map<String, dynamic> json) {
+    return KoanGet(
       apiResponse: ApiResponse.fromJson(json),
       data: json['data'] != null
           ? (json['data'] is List
-                  ? (json['data'] as List).map((i) => Data.fromJson(i)).toList()
-                  : [Data.fromJson(json['data'])])
-              .cast<Data>()
+                  ? (json['data'] as List).map((i) => Koan.fromJson(i)).toList()
+                  : [Koan.fromJson(json['data'])])
+              .cast<Koan>()
           : null,
       // errors: json['errors'] != null
       //     ? (json['errors'] is List
@@ -26,27 +27,7 @@ class Koan {
     );
   }
 
-  List<Data>? get datas => data;
-}
-
-class Data {
-  int id;
-  String title;
-  String koan;
-
-  Data({
-    required this.id,
-    required this.title,
-    required this.koan,
-  });
-
-  factory Data.fromJson(Map<String, dynamic> json) {
-    return Data(
-      id: json['id'],
-      title: json['title'],
-      koan: json['koan'],
-    );
-  }
+  List<Koan>? get datas => data;
 }
 
 class KoanPost {

@@ -1,7 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:koan/models/koan.dart';
+import 'package:koan/models/common/koan.dart';
+import 'package:koan/models/koan_get.dart';
+import 'package:koan/services/database/database_service.dart';
 import 'package:koan/services/fetch_koan_count.dart';
 import 'package:koan/services/fetch_koan_service.dart';
 import 'package:koan/ui/loading_dialog.dart';
@@ -16,17 +18,22 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final DatabaseService _databaseService = DatabaseService();
+
   int _currentIndex = 0; // Initialize with the Home screen index
 
   bool isDataLoading = true;
   int? id;
   int? count;
   String title = "";
-  String koan = "";
+  String koanDesc = "";
+  DateTime now = DateTime.now();
 
   int? newId;
 
   int? steak;
+
+  late Future<Koan?> localKoan = _getKoan();
 
   List<Color> colorRange = [
     Colors.grey[400]!, // Gray
@@ -87,10 +94,24 @@ class _HomeScreenState extends State<HomeScreen> {
       if (response.apiResponse.status == true) {
         var data = response.data;
         data?.forEach((element) {
-          id = element.id;
+          id = element.id!;
           title = element.title;
-          koan = element.koan;
+          koanDesc = element.koan;
         });
+
+        if (data != null && data.isNotEmpty) {
+          // Assuming Koan is the class for your Koan data
+          Koan fetchedKoan = Koan(
+            serverId: data[0].id,
+            title: data[0].title,
+            koan: data[0].koan,
+            status: data[0].status, // Set the status to true or false as needed
+            date: data[0].date, // Set the date as needed
+          );
+
+          // Call the insertKoan method to store the fetched Koan
+          DatabaseService().insertKoan(fetchedKoan);
+        }
 
         print(title);
 
@@ -107,10 +128,42 @@ class _HomeScreenState extends State<HomeScreen> {
     countKoan();
   }
 
+  Future<Koan?> _getKoan() async {
+    return await _databaseService.getActiveKoan();
+  }
+
+  void getKoanFromLocal() {
+    print("here");
+
+    print(localKoan);
+    localKoan = _getKoan();
+    localKoan.then((koan) {
+      print("koanid: ${koan?.id}");
+      if (koan == null) {
+        countKoan();
+      } else {
+        String currentDate =
+            "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+        if (currentDate == koan.date) {
+          id = koan.id!;
+          title = koan.title;
+          koanDesc = koan.koan;
+          print("date: ${koan.date}");
+        } else {
+          countKoan();
+        }
+        setState(() {
+          isDataLoading = false;
+        });
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
-    countKoan();
+    getKoanFromLocal();
+    // countKoan();
     steak = fetchSteak();
   }
 
@@ -183,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               Padding(
                                 padding: const EdgeInsets.all(16.0),
                                 child: Text(
-                                  koan,
+                                  koanDesc,
                                   style: const TextStyle(fontSize: 16.0),
                                 ),
                               ),

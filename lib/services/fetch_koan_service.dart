@@ -2,16 +2,16 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:koan/models/koan.dart';
+import 'package:koan/models/koan_get.dart';
 import 'package:http/http.dart' as http;
 
 class KoanService extends ChangeNotifier {
   KoanPost koanPost;
-  late Future<Koan> koan;
+  late Future<KoanGet> koan;
 
   KoanService({required this.koanPost});
 
-  Future<Koan> fetchKoan() async {
+  Future<KoanGet> fetchKoan() async {
     var header = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -23,10 +23,10 @@ class KoanService extends ChangeNotifier {
     );
     if (response.statusCode == 200) {
       print(response.body);
-      return Koan.fromJson(jsonDecode(response.body));
+      return KoanGet.fromJson(jsonDecode(response.body));
     } else {
       print(response.body);
-      return Koan.fromJson(jsonDecode(response.body));
+      return KoanGet.fromJson(jsonDecode(response.body));
     }
   }
 }
